@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from openpyxl import load_workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.formatting.rule import FormulaRule
@@ -5,28 +7,31 @@ from openpyxl.formatting.rule import FormulaRule
 
 def create_excel_report(result_df, output_file):
 
-    # Substituir valores vazios por células vazias
+    # Create the output folder if it does not exist yet
+    Path(output_file).parent.mkdir(parents=True, exist_ok=True)
+
+    # Replace missing values with empty cells
     result_df = result_df.fillna("")
 
-    # Salvar relatório em Excel
+    # Save the report to Excel
     result_df.to_excel(output_file, index=False)
 
-    # Abrir o arquivo gerado para aplicar formatação
+    # Open the generated file to apply formatting
     workbook = load_workbook(output_file)
     worksheet = workbook.active
 
-    # Formatação do cabeçalho
+    # Header formatting
     for cell in worksheet[1]:
         cell.font = Font(bold=True)
         cell.alignment = Alignment(horizontal="center")
 
-    # Congelar a primeira linha
+    # Freeze the first row
     worksheet.freeze_panes = "A2"
 
-    # Ativar filtros
+    # Enable filters
     worksheet.auto_filter.ref = worksheet.dimensions
 
-    # Ajustar largura das colunas
+    # Adjust column widths
     column_widths = {
         "A": 14,
         "B": 20,
@@ -43,12 +48,12 @@ def create_excel_report(result_df, output_file):
     for column, width in column_widths.items():
         worksheet.column_dimensions[column].width = width
 
-    # Alinhar os dados
+    # Align the data
     for row in worksheet.iter_rows():
         for cell in row:
             cell.alignment = Alignment(vertical="center")
 
-    # Formatação condicional para o Status
+    # Conditional formatting for the Status column
     status_colors = {
         "MATCHED": "C6EFCE",
         "CHANGED": "FFEB9C",
@@ -73,7 +78,7 @@ def create_excel_report(result_df, output_file):
             )
         )
 
-    # Salvar novamente
+    # Save again
     workbook.save(output_file)
 
-    print(f"\nRelatório criado com sucesso: {output_file}")
+    print(f"\nReport created successfully: {output_file}")

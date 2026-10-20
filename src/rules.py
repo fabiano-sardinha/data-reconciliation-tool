@@ -1,3 +1,31 @@
+import pandas as pd
+
+
+def values_differ(value_a, value_b):
+
+    a_missing = pd.isna(value_a)
+    b_missing = pd.isna(value_b)
+
+    # Two missing values (NaN, None) are considered equal
+    if a_missing and b_missing:
+        return False
+
+    # One missing value and one filled value are different
+    if a_missing or b_missing:
+        return True
+
+    return value_a != value_b
+
+
+def format_value(value):
+
+    # Missing values (NaN, None, pd.NA) are shown as "(empty)" in the messages
+    if pd.isna(value):
+        return "(empty)"
+
+    return value
+
+
 def get_status(row):
 
     if row["_merge"] == "left_only":
@@ -6,10 +34,10 @@ def get_status(row):
     if row["_merge"] == "right_only":
         return "NEW"
 
-    # Registro existe nos dois arquivos
-    name_same = row["Name_A"] == row["Name_B"]
-    email_same = row["Email_A"] == row["Email_B"]
-    status_same = row["Status_A"] == row["Status_B"]
+    # The record exists in both files
+    name_same = not values_differ(row["Name_A"], row["Name_B"])
+    email_same = not values_differ(row["Email_A"], row["Email_B"])
+    status_same = not values_differ(row["Status_A"], row["Status_B"])
 
     if name_same and email_same and status_same:
         return "MATCHED"
@@ -27,19 +55,22 @@ def get_changes(row):
     if row["_merge"] == "right_only":
         return "Customer exists only in File B"
 
-    if row["Name_A"] != row["Name_B"]:
+    if values_differ(row["Name_A"], row["Name_B"]):
         changes.append(
-            f"Name: {row['Name_A']} -> {row['Name_B']}"
+            f"Name: {format_value(row['Name_A'])} "
+            f"-> {format_value(row['Name_B'])}"
         )
 
-    if row["Email_A"] != row["Email_B"]:
+    if values_differ(row["Email_A"], row["Email_B"]):
         changes.append(
-            f"Email: {row['Email_A']} -> {row['Email_B']}"
+            f"Email: {format_value(row['Email_A'])} "
+            f"-> {format_value(row['Email_B'])}"
         )
 
-    if row["Status_A"] != row["Status_B"]:
+    if values_differ(row["Status_A"], row["Status_B"]):
         changes.append(
-            f"Status: {row['Status_A']} -> {row['Status_B']}"
+            f"Status: {format_value(row['Status_A'])} "
+            f"-> {format_value(row['Status_B'])}"
         )
 
     return "; ".join(changes)
