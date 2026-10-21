@@ -52,9 +52,10 @@ def test_duplicates_do_not_stop_processing(valid_files, tmp_path):
 
     report = read_report(output)
 
-    # A single row per Customer ID, with the duplicate Excel rows
+    # A single row per Customer ID, with the source file and the Excel rows
+    # of every occurrence
     assert len(report) == 5
-    assert report.loc[5, "Duplicate Rows"] == "5, 6"
+    assert report.loc[5, "Duplicate Rows"] == "File A: 5, 6; File B: 5"
     assert "File A" in report.loc[5, "Changes"]
 
 

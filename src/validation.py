@@ -10,6 +10,10 @@ REQUIRED_COLUMNS = [
     "Status"
 ]
 
+# +2 because the pandas index starts at 0 and row 1 of the Excel file is the
+# header. Used to convert a pandas index into an Excel row number.
+EXCEL_ROW_OFFSET = 2
+
 
 class InputFileError(Exception):
     """Predictable error: an input file is missing or invalid."""
@@ -84,10 +88,7 @@ def find_duplicates(df, file_name):
 
         for customer_id, group in duplicate_rows.groupby("Customer ID"):
 
-            # +2 because:
-            # the pandas index starts at 0
-            # and row 1 of the Excel file is the header
-            excel_rows = (group.index + 2).tolist()
+            excel_rows = (group.index + EXCEL_ROW_OFFSET).tolist()
 
             duplicate_info[customer_id] = excel_rows
 
