@@ -1,139 +1,111 @@
 # Data Reconciliation Tool
 
-Reusable Python tool for automated data reconciliation and Excel reporting.
+A Python desktop utility that compares two Excel workbooks by Customer ID and produces a formatted reconciliation report.
 
-## Overview
+Built as a portfolio project for data operations, application support, finance, and business workflows where teams need to identify matching, changed, missing, new, or duplicated customer records without manually comparing spreadsheets.
 
-The Data Reconciliation Tool compares data from two Excel files and identifies differences between them.
+Repository: https://github.com/fabiano-sardinha/data-reconciliation-tool
 
-It is designed to automate manual reconciliation processes commonly found in IT operations, application support, data processing and business workflows.
+## The Problem It Solves
 
-The tool can identify:
+Manual spreadsheet reconciliation is slow and error-prone, especially when files contain missing records, changed values, or repeated identifiers.
 
-- Records that match between both files
-- Records with changed information
-- Records missing from the second file
-- New records found in the second file
-- Duplicate Customer IDs
-- The Excel rows where duplicates were found
+This tool compares two `.xlsx` files using `Customer ID` as the record key and creates an Excel report that highlights the result for each ID. It also handles duplicate IDs safely: duplicated records are not forced into artificial A/B matches, so no occurrence is silently discarded.
 
-## How It Works
+## Features
 
-1. Run `python src/main.py`. A Tkinter file dialog opens so you can select **File A** and then **File B**.
-2. The tool checks that both selected paths exist and are files.
-3. Each file is read and validated (required columns and non-empty Customer IDs).
-4. Duplicate Customer IDs are detected and reported. They do not stop the processing.
-5. The two files are compared using the Customer ID.
-6. A formatted Excel report is written to `output/reconciliation_report.xlsx`.
-
-Loaded data, detected duplicates and the reconciliation result are also printed to the terminal.
-
-If you close a file dialog without selecting a file, the execution is cancelled.
-
-## Input Files
-
-**Format:** Excel workbooks in `.xlsx` format. Data is read from the first worksheet, and the first row must contain the column headers.
-
-The file dialog also lists `.xls` files, but reading them requires an extra package (`xlrd`) that is not part of `requirements.txt`. Treat `.xls` as not supported (see [Known Limitations](#known-limitations)).
-
-**Required columns** (the names must match exactly, including capitalization):
-
-| Column | Rule |
-|---|---|
-| Customer ID | Required. Must not contain empty values. Used to match records between the two files |
-| Name | Required. Compared between the two files |
-| Email | Required. Compared between the two files |
-| Status | Required. Compared between the two files |
-
-Additional columns may be present in the input files. The tool only uses the columns required for the reconciliation rules.
-
-Values are compared exactly as they appear in the files, with the following rules for empty cells in the Name, Email and Status columns:
-
-- If the cell is empty in both files, the values are considered equal, and no change is reported for that field.
-- If the cell is empty in only one of the files, the values are considered different and the record is reported as `CHANGED`.
+- Compares two Excel workbooks using `Customer ID`
+- Identifies matching, changed, missing, new, and duplicated records
+- Compares `Name`, `Email`, and `Status`
+- Treats two empty values as equal; reports a change when a value is empty in only one file
+- Generates a formatted Excel report with filters, frozen headers, column sizing, and status-based conditional formatting
+- Reports duplicate source files and original Excel row numbers
+- Creates a `Duplicate Details` worksheet when duplicates exist
+- Validates missing files, folder paths, required columns, and empty `Customer ID` values before writing a report
 
 ## Reconciliation Results
 
-The tool currently generates the following statuses:
-
 | Status | Description |
 |---|---|
-| MATCHED | Record exists in both files with the same information |
-| CHANGED | Record exists in both files but one or more fields changed |
-| MISSING | Record exists only in File A |
-| NEW | Record exists only in File B |
-| DUPLICATE | Customer ID appears more than once in an input file |
+| `MATCHED` | Record exists in both files and the tracked values match |
+| `CHANGED` | Record exists in both files but one or more tracked values differ |
+| `MISSING` | Record exists only in File A |
+| `NEW` | Record exists only in File B |
+| `DUPLICATE` | Customer ID appears more than once in File A, File B, or both |
 
-Records are matched using the Customer ID. For Customer IDs that exist in both files, the Name, Email and Status values are compared.
+Records that exist in both files are compared using `Name`, `Email`, and `Status`. A missing value is displayed as `(empty)` in a change description.
 
-### Duplicate Detection
+## Duplicate-ID Handling
 
-A Customer ID is a duplicate when it appears more than once **within the same file** (File A, File B or both).
+Duplicate IDs require special handling. A regular merge between repeated IDs can create artificial A/B record combinations and hide the original data structure.
 
-- Duplicates do not stop the reconciliation. They are reported in the result.
-- The Customer ID receives the status `DUPLICATE`, which takes priority over the other statuses.
-- The report contains a single row per duplicated Customer ID.
-- The `Changes` column indicates in which file or files the Customer ID appears multiple times (for example, "Customer ID appears multiple times in File A").
-- The `Duplicate Rows` column lists the Excel row numbers where the duplicate was found, in ascending order. Row 1 is the header, so the first data row is row 2. If the Customer ID is duplicated in both files, the rows from both files are combined in the same list.
+For every duplicated Customer ID, the tool:
+
+1. Excludes that ID from the record-to-record comparison.
+2. Creates one summary row in the main report with status `DUPLICATE`.
+3. Lists the source file and Excel row number of every occurrence.
+4. Adds every occurrence to the `Duplicate Details` worksheet.
+5. Uses `(different values)` in a summary field when the occurrences within one source file do not agree.
+
+This preserves all duplicated records and avoids implying that unrelated repeated rows are direct matches. Repeated rows with identical values are still reported as duplicates.
+
+## Input Requirements
+
+The supported input format is Excel `.xlsx`. The file picker also displays `.xls`, but that format is not supported by the current dependencies.
+
+The first worksheet is read, and the first row must contain these exact column names:
+
+| Column | Purpose |
+|---|---|
+| `Customer ID` | Record identifier used for reconciliation; must not be empty |
+| `Name` | Compared between File A and File B |
+| `Email` | Compared between File A and File B |
+| `Status` | Compared between File A and File B |
+
+Additional columns are allowed but are not included in the reconciliation rules.
 
 ## Output
 
-The tool generates an Excel report containing the following columns:
+The application writes the report to:
+
+```text
+output/reconciliation_report.xlsx
+```
+
+The main worksheet contains:
 
 | Column | Description |
 |---|---|
-| Customer ID | Identifier used to match the records |
-| Name_A, Name_B | Name in File A and in File B |
-| Email_A, Email_B | Email in File A and in File B |
-| Status_A, Status_B | Value of the input `Status` column in File A and in File B |
-| Status | Reconciliation result (MATCHED, CHANGED, MISSING, NEW or DUPLICATE) |
-| Changes | Description of the detected differences |
-| Duplicate Rows | Excel rows where the Customer ID is duplicated (empty when there are no duplicates) |
+| `Customer ID` | Identifier used to reconcile records |
+| `Name_A`, `Name_B` | Name from File A and File B |
+| `Email_A`, `Email_B` | Email from File A and File B |
+| `Status_A`, `Status_B` | Source status values |
+| `Status` | Reconciliation outcome |
+| `Changes` | Field-level changes or duplicate explanation |
+| `Duplicate Rows` | Source file and Excel row numbers for duplicated IDs |
 
-In the `Changes` column, a missing value is displayed as `(empty)`. For example: `Email: (empty) -> bruno@x.com` or `Email: maria@x.com -> (empty)`. A field that is empty in both files is not reported as a change.
+When duplicates are found, the report also contains a `Duplicate Details` worksheet with one row per occurrence: Customer ID, source file, Excel row, Name, Email, Status, and the number of occurrences in that source file.
 
-The generated report includes formatting, filters, frozen headers and conditional formatting for the reconciliation statuses.
+The output folder is created automatically when needed. A report with the same filename is overwritten.
 
-The report is always written to `output/reconciliation_report.xlsx`. The `output` folder is created automatically if it does not exist. An existing report with the same name is overwritten.
+## Quick Start
 
-If an input file is not valid, no new report is generated.
+### Prerequisites
 
-## Project Structure
+- Python 3.14 was used during project validation
+- Tkinter, included with the standard Windows Python installer
+- `pandas`
+- `openpyxl`
+- `pytest` for automated tests
 
-```text
-data-reconciliation-tool/
-│
-├── src/
-│   ├── main.py
-│   ├── reconcile.py
-│   ├── reporting.py
-│   ├── rules.py
-│   └── validation.py
-│
-├── tests/
-│   ├── conftest.py
-│   ├── test_main.py
-│   ├── test_reconcile.py
-│   ├── test_rules.py
-│   └── test_validation.py
-│
-├── input/            # optional place for your input files (ignored by Git)
-├── output/           # generated reports (created automatically, ignored by Git)
-├── .gitignore
-├── pytest.ini
-├── requirements.txt
-└── README.md
+### Installation
+
+Clone the repository and enter the project folder:
+
+```powershell
+git clone https://github.com/fabiano-sardinha/data-reconciliation-tool.git
+cd data-reconciliation-tool
 ```
-
-## Requirements
-
-- Python 3.14+
-- Tkinter (part of the Python standard library, used for the file selection dialog; it is included in the standard Windows installer, while some Linux distributions provide it as a separate package)
-- pandas
-- openpyxl
-- pytest
-
-## Installation
 
 Create and activate a virtual environment:
 
@@ -142,102 +114,90 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
-Install the required packages:
+Install dependencies:
 
 ```powershell
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
-## Usage
+### Run the Application
 
-Run the application from the project root folder:
+From the project root:
 
 ```powershell
 python src/main.py
 ```
 
-A Tkinter window opens and asks you to select File A, and then File B. The files can be stored in any folder. The `input` folder is just a convenient place to keep them.
+A file-selection dialog asks for File A and then File B. After validation, the report is generated at `output/reconciliation_report.xlsx`.
 
-The reconciliation report is generated in the following path, relative to the folder from which you run the command (so run it from the project root to get the report in this project's `output` folder):
+## Validation and Quality Checks
 
-```text
-output/reconciliation_report.xlsx
-```
+### Permanent automated test suite
 
-## Error Handling and Exit Codes
+The repository contains a pytest suite covering reconciliation statuses, field-level changes, empty-value rules, input validation, report generation, duplicate-ID scenarios, and application exit codes.
 
-Predictable usage errors are shown as a short message on the error output, prefixed with `ERROR:`, without a Python traceback.
-
-| Situation | Message (example) |
-|---|---|
-| File A and/or File B does not exist | `File A not found: '<path>'` |
-| A selected path is a folder, not a file | `File B is not a file: '<path>'` |
-| Required column is missing | `Invalid file '<path>'. Missing required columns: Status` |
-| Customer ID contains empty values | `Invalid file '<path>'. Customer ID contains empty values` |
-
-Both input paths are checked before any file is read, so a single message lists every path problem found. Content errors (missing columns, empty Customer IDs) are reported one file at a time, starting with File A. Example of a path error:
+Latest recorded result:
 
 ```text
-ERROR: Cannot start reconciliation.
-- File A not found: 'C:\data\customers_a.xlsx'
-- File B is not a file: 'C:\data\folder'
-Check the file paths and try again.
+97 passed
 ```
 
-Exit codes:
-
-| Code | Meaning |
-|---|---|
-| 0 | Success. The report was generated |
-| 1 | Predictable error (see the table above). No new report was generated |
-
-If you close a file dialog without selecting a file, the tool prints a cancellation message and also exits with code 1.
-
-Errors that are not listed above are intentionally not caught, so that real problems are not hidden. In that case Python shows the full traceback. Python also exits with a non-zero status (1) for uncaught errors, so the exit code alone does not distinguish predictable errors from unexpected ones. An `ERROR:` message indicates a predictable error, while a traceback indicates an unexpected one.
-
-Duplicate Customer IDs are not errors. They never stop the processing and are reported with the `DUPLICATE` status.
-
-## Running Tests
-
-Run the automated test suite from the project root with:
+Run the permanent test suite from the project root with:
 
 ```powershell
-pytest
+python -m pytest
 ```
 
-`pytest.ini` adds the `src` folder to the Python path, so no extra configuration is needed.
+### Independent volume check
 
-The tests create temporary Excel files (using pytest's `tmp_path`) and replace the Tkinter dialog, so they do not depend on the files in `input/` or `output/` and do not open any window.
+An additional one-off volume validation was run outside the permanent pytest suite using files with approximately 10,000 records.
 
-| Test file | Coverage |
-|---|---|
-| `tests/conftest.py` | Shared fixtures that create temporary Excel files |
-| `tests/test_main.py` | Exit codes (0 and 1), error messages and the file selection flow |
-| `tests/test_reconcile.py` | End-to-end reconciliation, the five statuses, duplicates, automatic creation of the output folder, no report on errors, and an end-to-end test of empty values in the generated Excel report |
-| `tests/test_rules.py` | Status and change rules, comparison of empty values (two empty values are equal, one empty value is a change) and the `(empty)` display of missing values in the change messages |
-| `tests/test_validation.py` | Input file checks, required columns, empty Customer IDs and duplicate detection |
+- 18 integrity checks passed
+- The Excel report was generated in approximately 4.28 seconds
 
-## Known Limitations
+This was a targeted validation scenario, not a general performance guarantee or benchmark across all machines, workbook structures, and data distributions.
 
-- Only `.xlsx` files are supported. `.xls` files appear in the file dialog, but the package needed to read them (`xlrd`) is not included in `requirements.txt`.
-- Only the first worksheet of each file is read.
-- The report location is fixed (`output/reconciliation_report.xlsx`) and cannot be chosen in the interface.
-- The required column names are fixed and must match exactly.
-- Values are compared exactly, without trimming spaces or ignoring capitalization.
-- Problems that are not covered by the predictable errors above (for example, an unreadable file, or a file or report that is open in another program) are not specially handled and may show a Python traceback.
+## Error Handling
 
-## Development Goals
+Expected input problems are reported with an `ERROR:` message and exit code `1`, including:
 
-Future versions will focus on:
+- Missing input files
+- A selected path that is a folder rather than a file
+- Missing required columns
+- Empty `Customer ID` values
 
-- Support for configurable column mappings
-- More flexible reconciliation rules
-- Additional data validation
-- Improved handling of different Excel structures
-- More detailed logging
-- User-friendly interface
-- Reusable configuration for different clients and business processes
+When input validation fails, the application stops before writing a new report. An existing report is not deleted.
 
-## License
+Unexpected problems, such as unreadable workbooks or files locked by another application, are not specially converted into user-friendly messages and may show a Python traceback.
 
-This project is currently intended as a portfolio and development project.
+## Project Structure
+
+```text
+data-reconciliation-tool/
+├── src/
+│   ├── main.py          # Tkinter entry point and predictable error handling
+│   ├── reconcile.py     # Reconciliation and duplicate-ID workflow
+│   ├── reporting.py     # Excel report creation and formatting
+│   ├── rules.py         # Status and field-change rules
+│   └── validation.py    # Input validation and duplicate detection
+├── tests/
+│   ├── conftest.py
+│   ├── test_duplicates.py
+│   ├── test_main.py
+│   ├── test_reconcile.py
+│   ├── test_rules.py
+│   └── test_validation.py
+├── requirements.txt
+├── pytest.ini
+└── README.md
+```
+
+## Current Limitations
+
+- Only `.xlsx` files are supported. The file picker displays `.xls`, but that format requires an additional dependency and is not supported by the current setup.
+- Only the first worksheet in each input workbook is read.
+- The output path is fixed at `output/reconciliation_report.xlsx`.
+- Required column names must match exactly.
+- Comparisons are exact: the tool does not trim whitespace, normalize values, or ignore capitalization.
+- Dependency versions are not pinned.
+- The interface is a desktop Tkinter file picker; there is no command-line argument interface or web interface.
