@@ -51,7 +51,7 @@ This preserves all duplicated records and avoids implying that unrelated repeate
 
 ## Input Requirements
 
-The supported input format is Excel `.xlsx`. The file picker also displays `.xls`, but that format is not supported by the current dependencies.
+The supported input format is Excel `.xlsx`. The application validates that input files use the `.xlsx` format and displays a clear message if an unsupported or legacy format (such as `.xls`) is selected.
 
 The first worksheet is read, and the first row must contain these exact column names:
 
@@ -66,11 +66,13 @@ Additional columns are allowed but are not included in the reconciliation rules.
 
 ## Output
 
-The application writes the report to:
+The application writes the report by default to:
 
 ```text
 output/reconciliation_report.xlsx
 ```
+
+*(A custom output destination path can also be chosen directly in the desktop interface).*
 
 The main worksheet contains:
 
@@ -144,18 +146,18 @@ From the project root:
 python src/main.py
 ```
 
-A file-selection dialog asks for File A and then File B. After validation, the report is generated at `output/reconciliation_report.xlsx`.
+A desktop interface opens allowing you to select File A, File B, and an optional destination path. Clicking **Run Reconciliation** executes the analysis in the background without freezing the UI, displays a summary of reconciliation counts (Matched, Changed, Missing, New, Duplicate), and enables one-click buttons to open the generated report and containing folder.
 
 ## Validation and Quality Checks
 
 ### Permanent automated test suite
 
-The repository contains a pytest suite covering reconciliation statuses, field-level changes, empty-value rules, input validation, report generation, duplicate-ID scenarios, and application exit codes.
+The repository contains a pytest suite covering reconciliation statuses, field-level changes, empty-value rules, input validation, report generation, duplicate-ID scenarios, application exit codes, and graphical user interface components.
 
 Latest recorded result:
 
 ```text
-97 passed
+106 passed
 ```
 
 Run the permanent test suite from the project root with:
@@ -175,23 +177,26 @@ This was a targeted validation scenario, not a general performance guarantee or 
 
 ## Error Handling
 
-Expected input problems are reported with an `ERROR:` message and exit code `1`, including:
+Expected input problems are reported clearly, including:
 
 - Missing input files
 - A selected path that is a folder rather than a file
 - Missing required columns
 - Empty `Customer ID` values
 
+In the graphical user interface, expected validation problems are surfaced in clear, friendly error dialogs without Python tracebacks, and input fields remain available for correction. In scripted or headless execution, expected errors are printed to `sys.stderr` and exit with code `1`.
+
 When input validation fails, the application stops before writing a new report. An existing report is not deleted.
 
-Unexpected problems, such as unreadable workbooks or files locked by another application, are not specially converted into user-friendly messages and may show a Python traceback.
+Unexpected problems, such as unreadable workbooks or files locked by another application, are reported as errors with explanatory messages.
 
 ## Project Structure
 
 ```text
 data-reconciliation-tool/
 ├── src/
-│   ├── main.py          # Tkinter entry point and predictable error handling
+│   ├── gui.py           # Tkinter/ttk desktop GUI and background execution
+│   ├── main.py          # Application entry point and predictable error handling
 │   ├── reconcile.py     # Reconciliation and duplicate-ID workflow
 │   ├── reporting.py     # Excel report creation and formatting
 │   ├── rules.py         # Status and field-change rules
@@ -199,6 +204,7 @@ data-reconciliation-tool/
 ├── tests/
 │   ├── conftest.py
 │   ├── test_duplicates.py
+│   ├── test_gui.py
 │   ├── test_main.py
 │   ├── test_reconcile.py
 │   ├── test_rules.py
@@ -210,10 +216,9 @@ data-reconciliation-tool/
 
 ## Current Limitations
 
-- Only `.xlsx` files are supported. The file picker displays `.xls`, but that format requires an additional dependency and is not supported by the current setup.
+- Only `.xlsx` files are supported. Legacy `.xls` workbooks are not supported and require conversion to `.xlsx` before reconciliation.
 - Only the first worksheet in each input workbook is read.
-- The output path is fixed at `output/reconciliation_report.xlsx`.
 - Required column names must match exactly.
 - Comparisons are exact: the tool does not trim whitespace, normalize values, or ignore capitalization.
 - Dependency versions are not pinned.
-- The interface is a desktop Tkinter file picker; there is no command-line argument interface or web interface.
+- The interface is a desktop Tkinter/ttk application; there is no command-line argument interface or web interface.

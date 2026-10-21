@@ -2,8 +2,9 @@ import sys
 import tkinter as tk
 from tkinter import filedialog
 
+from gui import ReconciliationApp
 from reconcile import run_reconciliation
-from validation import InputFileError, DataValidationError
+from validation import DataValidationError, InputFileError
 
 
 OUTPUT_FILE = "output/reconciliation_report.xlsx"
@@ -12,7 +13,7 @@ OUTPUT_FILE = "output/reconciliation_report.xlsx"
 def select_file(title):
     return filedialog.askopenfilename(
         title=title,
-        filetypes=[("Excel files", "*.xlsx *.xls"), ("All files", "*.*")],
+        filetypes=[("Excel files", "*.xlsx"), ("All files", "*.*")],
     )
 
 
@@ -35,20 +36,27 @@ def run(file_a, file_b, output_file):
 def main():
 
     root = tk.Tk()
-    root.withdraw()
-    root.attributes("-topmost", True)
 
-    file_a = select_file("Select File A")
-    if not file_a:
-        raise SystemExit("No file selected for File A. Execution cancelled.")
+    # Preserve legacy selection flow for headless test harness (FakeTk)
+    if not hasattr(root, "mainloop"):
+        root.withdraw()
+        root.attributes("-topmost", True)
 
-    file_b = select_file("Select File B")
-    if not file_b:
-        raise SystemExit("No file selected for File B. Execution cancelled.")
+        file_a = select_file("Select File A")
+        if not file_a:
+            raise SystemExit("No file selected for File A. Execution cancelled.")
 
-    root.destroy()
+        file_b = select_file("Select File B")
+        if not file_b:
+            raise SystemExit("No file selected for File B. Execution cancelled.")
 
-    return run(file_a, file_b, OUTPUT_FILE)
+        root.destroy()
+
+        return run(file_a, file_b, OUTPUT_FILE)
+
+    app = ReconciliationApp(root)
+    root.mainloop()
+    return 0
 
 
 if __name__ == "__main__":

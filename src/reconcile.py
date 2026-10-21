@@ -1,4 +1,4 @@
-import pandas as pd
+﻿import pandas as pd
 
 from validation import (
     EXCEL_ROW_OFFSET,
@@ -252,3 +252,12 @@ def run_reconciliation(file_a, file_b, output_file):
 
     # Create the Excel report
     create_excel_report(result_df, output_file, details)
+
+    return {
+        "MATCHED": int((result_df["Status"] == "MATCHED").sum()),
+        "CHANGED": int((result_df["Status"] == "CHANGED").sum()),
+        "MISSING": int((result_df["Status"] == "MISSING").sum()),
+        "NEW": int((result_df["Status"] == "NEW").sum()),
+        "DUPLICATE": int((result_df["Status"] == "DUPLICATE").sum()),
+        "TOTAL": len(result_df),
+    }
