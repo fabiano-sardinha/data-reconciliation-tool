@@ -88,6 +88,22 @@ When duplicates are found, the report also contains a `Duplicate Details` worksh
 
 The output folder is created automatically when needed. A report with the same filename is overwritten.
 
+## Example Files
+
+The [`examples`](examples/) directory contains fictional workbooks that demonstrate all five reconciliation outcomes, including duplicate ID `1005` in both input files.
+
+- [Demo File A](examples/demo_file_a.xlsx)
+- [Demo File B](examples/demo_file_b.xlsx)
+- [Generated reconciliation report](examples/demo_reconciliation_report.xlsx)
+
+Regenerate the example files and report from the project root with:
+
+```powershell
+.\.venv\Scripts\python.exe examples/generate_examples.py
+```
+
+The script writes only to the `examples` directory.
+
 ## Quick Start
 
 ### Prerequisites
