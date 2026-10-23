@@ -1,27 +1,42 @@
 # Data Reconciliation Tool
 
-A Python desktop utility that compares two Excel workbooks by Customer ID and produces a formatted reconciliation report.
+A professional Python desktop utility that compares two Excel (`.xlsx`) workbooks by `Customer ID` and produces a formatted reconciliation audit report with automated duplicate handling.
 
-Built as a portfolio project for data operations, application support, finance, and business workflows where teams need to identify matching, changed, missing, new, or duplicated customer records without manually comparing spreadsheets.
+Built as a portfolio project for data operations, application support, finance, and business workflows where teams need to identify matching, changed, missing, new, or duplicated customer records without slow and error-prone manual spreadsheet comparison.
 
-Repository: https://github.com/fabiano-sardinha/data-reconciliation-tool
+**GitHub Repository:** [fabiano-sardinha/data-reconciliation-tool](https://github.com/fabiano-sardinha/data-reconciliation-tool)
+
+## Screenshots
+
+### Desktop Application Interface
+Responsive Tkinter/ttk desktop interface featuring independent file selectors, live progress feedback, and real-time reconciliation metric cards:
+
+![Desktop Application Interface](docs/images/reconciliation-gui.png)
+
+### Main Reconciliation Report
+Formatted Excel workbook featuring frozen headers, auto-filters, column auto-sizing, and status-based conditional formatting:
+
+![Main Reconciliation Report](docs/images/reconciliation-report.png)
+
+### Duplicate Details Worksheet
+Dedicated audit tab tracking every occurrence of repeated Customer IDs with original Excel row numbers and source files:
+
+![Duplicate Details Worksheet](docs/images/duplicate-details.png)
+
+## Key Features
+
+- **Automated Two-Way Reconciliation:** Compares two Excel workbooks (`.xlsx`) using `Customer ID` as the unique record identifier.
+- **Five Reconciliation Outcomes:** Categorizes every record as `MATCHED`, `CHANGED`, `MISSING`, `NEW`, or `DUPLICATE`.
+- **Granular Field-Level Audit:** Identifies exact value differences across `Name`, `Email`, and `Status`, distinguishing empty fields from populated values.
+- **Safe Duplicate-ID Handling:** Prevents artificial Cartesian row combinations by isolating repeated keys and recording every occurrence with its source file and row number.
+- **Professional Excel Reporting:** Exports a formatted workbook with auto-filters, frozen panes, custom column widths, and color-coded status highlights.
+- **Robust Input Validation:** Verifies file existence, required column headers, and non-empty key values before processing to prevent partial or corrupted outputs.
 
 ## The Problem It Solves
 
 Manual spreadsheet reconciliation is slow and error-prone, especially when files contain missing records, changed values, or repeated identifiers.
 
 This tool compares two `.xlsx` files using `Customer ID` as the record key and creates an Excel report that highlights the result for each ID. It also handles duplicate IDs safely: duplicated records are not forced into artificial A/B matches, so no occurrence is silently discarded.
-
-## Features
-
-- Compares two Excel workbooks using `Customer ID`
-- Identifies matching, changed, missing, new, and duplicated records
-- Compares `Name`, `Email`, and `Status`
-- Treats two empty values as equal; reports a change when a value is empty in only one file
-- Generates a formatted Excel report with filters, frozen headers, column sizing, and status-based conditional formatting
-- Reports duplicate source files and original Excel row numbers
-- Creates a `Duplicate Details` worksheet when duplicates exist
-- Validates missing files, folder paths, required columns, and empty `Customer ID` values before writing a report
 
 ## Reconciliation Results
 
@@ -72,7 +87,8 @@ The application writes the report by default to:
 output/reconciliation_report.xlsx
 ```
 
-*(A custom output destination path can also be chosen directly in the desktop interface).*
+> [!NOTE]
+> A custom output destination path can also be chosen directly in the desktop interface.
 
 The main worksheet contains:
 
@@ -194,6 +210,11 @@ Unexpected problems, such as unreadable workbooks or files locked by another app
 
 ```text
 data-reconciliation-tool/
+├── docs/
+│   └── images/
+│       ├── duplicate-details.png
+│       ├── reconciliation-gui.png
+│       └── reconciliation-report.png
 ├── src/
 │   ├── gui.py           # Tkinter/ttk desktop GUI and background execution
 │   ├── main.py          # Application entry point and predictable error handling
